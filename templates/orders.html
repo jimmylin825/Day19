@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>訂單列表</title>
+</head>
+
+<body>
+
+<!-- 查詢表單 -->
+<form method="get" action="/orders">
+    <label for="customer">顧客名稱：</label>
+    <input type="text" name="customer" id="customer" placeholder="輸入顧客名稱" value="{{ request.args.get('customer', '') }}">
+
+    <label for="start">起始日期：</label>
+    <input type="date" name="start" id="start" value="{{ request.args.get('start', '') }}">
+
+    <label for="end">結束日期：</label>
+    <input type="date" name="end" id="end" value="{{ request.args.get('end', '') }}">
+
+    <button type="submit">查詢</button>
+</form>
+
+<h1>訂單列表</h1>
+
+<!-- 匯出報表（CSV） -->
+<form method="get" action="/export_csv">
+    <input type="hidden" name="customer" value="{{ request.args.get('customer', '') }}">
+    <input type="hidden" name="start" value="{{ request.args.get('start', '') }}">
+    <input type="hidden" name="end" value="{{ request.args.get('end', '') }}">
+    <button type="submit">匯出報表（CSV）</button>
+</form>
+
+<!-- 匯出報表（Excel） -->
+<p><a href="{{ url_for('export.export_excel') }}">匯出 Excel</a></p>
+
+<table border="1">
+    <tr>
+        <th>顧客名稱</th>
+        <th>商品名稱</th>
+        <th>單價</th>
+        <th>數量</th>
+        <th>
+            <a href="?sort=amount_desc">總金額 ↓</a> |
+            <a href="?sort=amount_asc">↑</a>
+        </th>
+        <th>
+            <a href="?sort=date_desc">訂單日期 ↓</a> |
+            <a href="?sort=date_asc">↑</a>
+        </th>
+    </tr>
+
+    {% set ns = namespace(total_sum=0) %}
+    {% for order in orders %}
+    {% set item_total = order.quantity * order.product.price %}
+    {% set ns.total_sum = ns.total_sum + item_total %}
+    <tr>
+        <td>{{ order.customer.name }}</td>
+        <td>{{ order.product.name }}</td>
+        <td>{{ order.product.price }}</td>
+        <td>{{ order.quantity }}</td>
+        <td>{{ item_total }}</td>
+        <td>{{ order.order_date.strftime("%Y-%m-%d") }}</td>
+    </tr>
+    {% endfor %}
+
+    <!-- 總金額列 -->
+    <tr>
+        <td colspan="5" style="text-align:right;"><strong>總金額：</strong></td>
+        <td style="text-align:right;"><strong>{{ ns.total_sum }}</strong></td>
+    </tr>
+</table>
+
+</body>
+</html>

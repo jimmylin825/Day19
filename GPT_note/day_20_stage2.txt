@@ -1,0 +1,100 @@
+📘 Day 20 – 第二階段目標：匯出 Excel 報表
+🎯 目標功能：
+
+讓使用者查詢條件後，不只能匯出 .csv，還可以：
+
+✅ 將結果輸出成 .xlsx
+✅ 包含欄位標題、內容、統計總金額
+✅ 自動下載報表（搭配 Flask 回傳 Response）
+🧩 第一步流程說明
+
+我們將在 Flask 中加入一個新的路由 /export_excel，邏輯與 /export_csv 類似，但使用 openpyxl 產生 Excel：
+💡 核心步驟：
+
+    透過 get_filtered_orders() 取得篩選後的訂單資料
+
+    使用 openpyxl.Workbook() 新建 Excel 活頁簿
+
+    寫入欄位標題列
+
+    寫入每一筆資料（顧客名稱、商品、數量、總金額、日期）
+
+    自動計算總金額加總
+
+    使用 Flask 的 send_file 把檔案回傳給使用者下載
+
+📦 前置確認（請先準備好）
+
+    你的專案已安裝 openpyxl
+    ✅ 安裝方式：pip install openpyxl（如未安裝）
+
+    有正常的 get_filtered_orders() 函式
+
+    有正確的 Order → Customer, Product 關聯
+
+🧪 實作目標
+
+請你根據以上說明，在 app.py 中新增一個 /export_excel 的路由功能，我稍後會給你範例步驟與簡化程式碼。
+
+你準備好後我會分段協助你完成它，並最終讓你做到從網頁上直接下載 .xlsx 檔案的報表。是否現在開始實作？
+
+🔧 第一步：在 Flask 新增 /export_excel 路由
+
+請先在 app.py 中加入以下匯入與基本路由架構：
+📌 新增 import：
+
+from flask import send_file
+from openpyxl import Workbook
+from io import BytesIO
+
+📌 新增 /export_excel 路由骨架：
+
+@app.route("/export_excel")
+def export_excel():
+    orders = get_filtered_orders()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "訂單報表"
+
+    # 寫入標題列
+    ws.append(["顧客名稱", "商品名稱", "單價", "數量", "總金額", "訂單日期"])
+
+    # 寫入資料列
+    total_sum = 0
+    for order in orders:
+        subtotal = order.quantity * order.product.price
+        total_sum += subtotal
+        ws.append([
+            order.customer.name,
+            order.product.name,
+            order.product.price,
+            order.quantity,
+            subtotal,
+            order.order_date.strftime("%Y-%m-%d")
+        ])
+
+    # 加上總金額列
+    ws.append(["", "", "", "總金額", total_sum])
+
+    # 儲存為 BytesIO 物件，讓 Flask 傳送
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="orders.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+✅ 接下來請你完成：
+
+    將以上程式碼貼入你的 app.py 中
+
+    啟動 Flask 並進入 /export_excel 頁面
+
+    測試是否可以成功下載 Excel 檔並開啟檢查內容
+
+如果有完成或中途報錯，我可以立刻協助你排除。你完成後請跟我說「✅ 完成」或「❌ 出現錯誤」。

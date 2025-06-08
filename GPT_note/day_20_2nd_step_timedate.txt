@@ -1,0 +1,109 @@
+📘 功能目標：查詢某日期區間的訂單
+
+    例如輸入 start=2024-01-01&end=2024-02-01，查出這段期間的所有訂單
+
+✅ 開發步驟總覽：
+步驟	說明
+1️⃣ 接收 start 和 end 參數	使用 request.args.get("start")
+2️⃣ 轉換為 datetime 類型	用 datetime.strptime(...)
+3️⃣ 使用 .filter() 加入區間條件	.filter(Order.order_date >= start)
+4️⃣ 顯示結果	顯示與之前 orders.html 相同，只是資料變少
+🔧 修改 Flask 路由（新增日期篩選功能）
+
+請打開 app.py 中的 /orders 路由，並加入以下功能：
+
+from flask import Flask, request, render_template
+from datetime import datetime
+from models import session, Order
+
+@app.route("/orders")
+def show_orders():
+    query = session.query(Order)
+
+    # ✅ 關鍵字搜尋
+    customer_name = request.args.get("customer")
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    # ✅ 日期範圍搜尋
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+
+    if start_date:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date >= start_dt)
+
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date <= end_dt)
+
+    orders = query.all()
+    return render_template("orders.html", orders=orders)
+
+🧪 測試方式（暫時用網址測試）
+
+進入瀏覽器網址列輸入類似：
+
+http://127.0.0.1:5000/orders?start=2024-01-01&end=2024-02-15
+
+你應該會只看到該時間區間的訂單。
+💡 小提醒
+
+    如果你輸入錯誤日期格式（例如 2024/01/01）會報錯，要用 2024-01-01 這種格式
+
+    如果沒帶日期參數就會顯示全部訂單（預設查詢）
+
+ 🎯 目標：在 orders.html 頁面上新增搜尋欄位
+
+你將學到：
+
+    如何新增 HTML 表單與輸入欄位
+
+    表單送出時，自動把查詢條件傳給 Flask 後端處理
+
+    整合顧客名稱與日期篩選欄位
+
+✅ 修改步驟
+1️⃣ 打開 templates/orders.html，在 <h1> 上方加入以下表單：
+
+<form method="get" action="/orders">
+    <label for="customer">顧客名稱：</label>
+    <input type="text" name="customer" id="customer" placeholder="輸入顧客名稱" value="{{ request.args.get('customer', '') }}">
+
+    <label for="start">起始日期：</label>
+    <input type="date" name="start" id="start" value="{{ request.args.get('start', '') }}">
+
+    <label for="end">結束日期：</label>
+    <input type="date" name="end" id="end" value="{{ request.args.get('end', '') }}">
+
+    <button type="submit">查詢</button>
+</form>
+
+🔍 說明：
+元素	功能
+<form method="get" action="/orders">	當按下「查詢」時，會把表單資料附加在網址上送到 /orders
+<input name="customer">	顧客名稱輸入欄位（會對應到 request.args.get("customer")）
+<input type="date">	HTML5 日期選擇器（會對應到 start, end）
+value="{{ request.args.get(...) }}"	讓欄位保留上次查詢過的值（UX 友善）
+2️⃣ 確保你在 app.py 中的 /orders 路由已經處理了以下三個條件：
+
+# customer_name
+# start_date
+# end_date
+
+你之前應該已經完成了這部分，現在只是在前端幫你包裝成使用者友善的 UI。
+🧪 測試方式：
+
+    啟動 Flask 項目，開啟 http://127.0.0.1:5000/orders
+
+    輸入條件，例如：
+
+        顧客名稱輸入「小明」
+
+        起始日期「2024-01-01」
+
+        結束日期「2024-02-01」
+
+    點「查詢」➡ 就會只顯示條件符合的訂單
+
+如果你貼上成功，可以直接看到查詢欄位生效。如果遇到畫面沒變、查不到資料，我可以幫你除錯 HTML 或 Flask 的部分。

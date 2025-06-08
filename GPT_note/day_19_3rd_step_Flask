@@ -1,0 +1,259 @@
+🎯 Day 19 第三階段任務：Flask 顯示訂單報表頁面
+✅ 目標：
+
+建立一個 Flask 頁面 /orders，顯示所有訂單資料，並結合 ORM 關聯結果。
+📄 顯示內容格式：
+
+在 /orders 頁面中，使用 HTML 表格顯示下列欄位：
+顧客名稱	商品名稱	單價	數量	總金額	訂單日期
+🔧 實作規範：
+
+    使用 Jinja2 模板 (orders.html) 顯示資料
+
+    從資料庫查詢所有訂單資料（Order）
+
+    每一筆訂單都透過關聯取得：
+
+        order.customer.name
+
+        order.product.name
+
+        order.product.price
+
+    計算 總金額 = 單價 × 數量
+
+    顯示格式清楚對齊即可（不需 CSS 美化）
+
+📁 建議檔案結構（參考）：
+
+GPT_Day19/
+├── app.py                # Flask 主程式
+├── models.py             # SQLAlchemy 模型
+├── seed.py               # 假資料插入
+├── templates/
+│   └── orders.html       # 顯示訂單表格
+
+📌 額外挑戰（完成後可加）
+
+    排序：可依照訂單日期排序
+
+    顯示總筆數與總金額
+
+    加上 /orders?customer=小明 的查詢條件（下一階段任務）
+
+🧠 什麼是 Jinja2？
+
+Jinja2 是 Flask 預設使用的「模板語言」，
+可以把 Python 變數、資料結構「插入到 HTML 裡」動態顯示。
+
+你在 Flask 中寫的：
+
+return render_template("orders.html", orders=all_orders)
+
+會把 all_orders 的資料傳進 orders.html，
+你就可以在 HTML 裡用 Jinja2 語法把它「顯示出來」。
+🧪 最常用的語法：
+類型	語法	說明
+插入變數	{{ 變數 }}	顯示變數內容
+條件判斷	{% if 條件 %} ... {% endif %}	判斷邏輯顯示不同內容
+迴圈	{% for 變數 in 清單 %} ... {% endfor %}	顯示多筆資料（像列表、表格）
+✅ 最小可執行範例：orders.html
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>訂單列表</title>
+</head>
+<body>
+    <h1>訂單列表</h1>
+    <table border="1">
+        <tr>
+            <th>顧客名稱</th>
+            <th>商品名稱</th>
+            <th>單價</th>
+            <th>數量</th>
+            <th>總金額</th>
+            <th>訂單日期</th>
+        </tr>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.customer.name }}</td>
+            <td>{{ order.product.name }}</td>
+            <td>{{ order.product.price }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ order.quantity * order.product.price }}</td>
+            <td>{{ order.order_date.strftime("%Y-%m-%d") }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
+
+📁 專案內部需要這樣搭配
+
+    templates/orders.html 放在 templates 資料夾中（資料夾名字不能改！）
+
+    app.py 中路由要寫：
+
+from flask import Flask, render_template
+from models import session, Order
+
+app = Flask(__name__)
+
+@app.route("/orders")
+def show_orders():
+    orders = session.query(Order).all()
+    return render_template("orders.html", orders=orders)
+
+✅ 檢查是否成功的方法：
+
+    啟動 Flask：
+
+    flask run
+
+    瀏覽器開啟 http://127.0.0.1:5000/orders
+
+    若一切正確，你會看到一張完整的表格列出所有訂單
+
+✅ 小結：
+你需要會的	目前你會了嗎？
+在 HTML 用 {{ 變數 }} 插入資料	✅
+用 {% for item in list %} 顯示清單	✅
+Flask 中使用 render_template() 傳值	✅
+資料夾需命名為 templates/	✅
+
+你已經準備好實作 Day 19 第三階段任務了！
+明天開始做時，可以照這份教學直接下手，若想多加點挑戰（如加總功能、日期格式化、欄位加總）也可以問我 🔥
+
+1️⃣ return render_template("orders.html", orders=orders) 中的 orders=orders 是什麼意思？
+
+這是在 將 Python 變數傳給 HTML 模板用的語法。
+拆解來看：
+
+orders = session.query(Order).all()
+return render_template("orders.html", orders=orders)
+
+    左邊的 orders= 是你要在 orders.html 模板中使用的變數名稱
+
+    右邊的 orders 是你 Python 程式中的實際變數（資料）
+
+    ✅ 換句話說：你是「把 Python 中查到的訂單清單，命名為 orders 傳到 HTML 裡」。
+
+2️⃣ HTML 我完全不熟，要怎麼看懂你給的模板？
+
+你可以把 HTML 想像成「網頁用的簡單語言」，你現在只要會幾個重點就能用 Jinja2 模板做表格 ✅
+✅ 快速教學：對你有用的 HTML 結構
+🔹 網頁結構基礎（你不需要全部會，只要記住框架）
+
+<!DOCTYPE html>        ← 告訴瀏覽器這是 HTML5 文件
+<html>                 ← 整份網頁開始
+<head>                 ← 網頁標題、CSS 放這裡（目前不需管）
+</head>
+<body>                 ← 網頁內容開始
+
+<h1>我是大標題</h1>    ← 文字標題
+
+<p>這是一段說明文字</p> ← 一段段落（paragraph）
+
+</body>
+</html>
+
+🔹 表格語法重點（你用得到的部分）
+
+<table border="1">       ← 開始表格
+    <tr>                 ← table row（列）
+        <th>標題</th>    ← table heading（標題欄）
+        <th>數量</th>
+    </tr>
+    <tr>
+        <td>耳機</td>     ← table data（一般資料格）
+        <td>3</td>
+    </tr>
+</table>
+
+    ✅ 每個 <tr> 是一列，每個 <td> 是一格，內容會照你傳進來的變數動態顯示。
+
+🔹 Jinja2 動態區塊範例
+
+{% for order in orders %}
+    <tr>
+        <td>{{ order.customer.name }}</td>
+        <td>{{ order.product.name }}</td>
+    </tr>
+{% endfor %}
+
+這段會根據你傳進來的 orders 一筆一筆產生 <tr>...</tr> 表格列，
+並用 {{ ... }} 插入實際內容。
+✅ 你目前只要掌握：
+你看到的語法	中文意思	你可以怎麼用
+<table>	建立表格	結果會變成一格一格的表
+<tr>	表格的橫列	一筆訂單用一個 <tr>
+<td>	表格中的資料格	顯示商品名稱、數量等
+{{ 變數 }}	插入變數資料	顯示從 Flask 傳來的內容
+{% for ... %}	迴圈開始	顯示多筆訂單
+{% endfor %}	迴圈結束	結束顯示
+✅ 練習任務建議
+
+你可以試著打開 orders.html，把這些區塊貼上、修改看看，例如只保留顧客名字：
+
+{% for order in orders %}
+    <p>{{ order.customer.name }}</p>
+{% endfor %}
+
+結果你會看到每一筆顧客名字各佔一行。
+
+🎨 Step 1：加入自動加總功能（在 Jinja2 中計算總金額）
+✅ 修改你的 orders.html：
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>訂單列表</title>
+</head>
+<body>
+    <h1>訂單列表</h1>
+    <table border="1" cellspacing="0" cellpadding="5">
+        <tr>
+            <th>顧客名稱</th>
+            <th>商品名稱</th>
+            <th>單價</th>
+            <th>數量</th>
+            <th>總金額</th>
+            <th>訂單日期</th>
+        </tr>
+
+        {% set total_sum = 0 %}
+        {% for order in orders %}
+        {% set item_total = order.quantity * order.product.price %}
+        {% set total_sum = total_sum + item_total %}
+        <tr>
+            <td>{{ order.customer.name }}</td>
+            <td>{{ order.product.name }}</td>
+            <td>{{ order.product.price }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ item_total }}</td>
+            <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+
+
+        <tr>
+            <td colspan="4" style="text-align:right;"><strong>總金額：</strong></td>
+            <td colspan="2"><strong>{{ total_sum }}</strong></td>
+        </tr>
+    </table>
+</body>
+</html>
+
+🔍 重點說明：
+功能	寫法	說明
+累加變數	{% set total_sum = total_sum + item_total %}	Jinja2 裡用 set 自行運算
+跨欄顯示	<td colspan="4">	合併欄位，讓表格看起來更整齊
+字體加粗	<strong>...</strong>	提醒使用者這是加總欄位
+✅ 執行結果（你會看到）：
+
+    每一列都有對應的訂單資料
+
+    最下面一行是「總金額：xxxxx」
+
+    不用回 Python，完全由 Jinja2 幫你處理總計

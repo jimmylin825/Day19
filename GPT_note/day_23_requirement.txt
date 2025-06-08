@@ -1,0 +1,63 @@
+✅ Day 23 整體目標
+
+    優化路由結構
+
+        routes 分拆為 orders.py, export.py, dashboard.py
+
+        使用 Blueprint 並集中註冊在 routes/__init__.py
+
+    資料處理邏輯抽離
+
+        查詢與統計邏輯抽到 utils.py
+
+    避免重複代碼
+
+        使用 get_filtered_orders() 避免重複查詢邏輯
+
+        使用 generate_filename() 管理報表檔名
+
+    View 樣板一致性
+
+        各頁使用類似的表單與回饋樣式
+
+        加入條件保持機制（value="{{ request.args.get(...) }}"）
+
+    未來擴充容易
+
+        不論新增報表類型、統計邏輯或管理後台，都能很容易插入
+
+✅ Day 23 教學流程
+步驟	主題	說明
+1️⃣	確認專案目錄結構	routes、templates、utils 完整獨立
+2️⃣	Blueprint 註冊總整理	register_routes() 整合三個藍圖
+3️⃣	HTML 樣板統一優化	所有輸入框保留查詢條件
+4️⃣	utils 裡封裝通用邏輯	get_order_summary()、get_filtered_orders()、generate_filename()
+5️⃣	檔案下載功能驗證	CSV 與 Excel 可套用查詢條件並命名正確
+6️⃣	dashboard 分頁統整分析	可查詢條件並顯示統計結果
+7️⃣	測試專案整體流程	包含查詢 → 匯出 → 統計三階段功能
+✅	結案確認	將整個專案備份作為 Flask 完整模板
+🧩 第一件事 — 請你幫我確認：
+
+請列出目前的專案結構（只要大略即可），範例如下：
+
+GPT_Day19/
+│
+├── app.py
+├── models.py
+├── utils.py
+│
+├── routes/
+│   ├── __init__.py
+│   ├── orders.py
+│   ├── export.py
+│   └── dashboard.py
+│
+└── templates/
+    ├── orders.html
+    ├── dashboard.html
+
+我會先幫你對照目前的結構是否完整，若沒問題，我們就會進行：
+
+    ✅ Day 23 最終重構整合與專案測試驗證
+
+請貼上目前的結構或用文字大致描述也可以。

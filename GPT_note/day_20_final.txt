@@ -1,0 +1,277 @@
+很好，我們現在來進行 Day 20 的最後階段：Flask 模組化與 routes 結構優化。
+這是為了讓你未來在做個人專案時更容易維護、擴充與除錯。
+🧱 一、為什麼要模組化？
+
+目前你的 app.py 同時包含：
+
+    路由設定
+
+    資料查詢邏輯
+
+    匯出功能
+
+    啟動伺服器
+
+➡ 若檔案變大、功能變多，會變得難以維護。
+➡ 模組化能將每個功能「分檔、分責任」，讓架構清楚、乾淨。
+📦 二、基本模組化架構
+
+你將會把 routes 路由邏輯獨立出來：
+
+your_project/
+├── app.py                # 主入口，只啟動 app
+├── routes/
+│   ├── __init__.py       # 註冊所有藍圖
+│   ├── orders.py         # 所有與 /orders 有關的路由
+│   └── export.py         # 匯出功能 (csv, excel)
+├── models.py             # 資料模型與 session
+└── templates/
+
+🔧 三、實作步驟
+步驟 1️⃣：建立資料夾與檔案
+
+在 app.py 同層建立：
+
+routes/
+├── __init__.py
+├── orders.py
+└── export.py
+
+步驟 2️⃣：設定 orders.py
+
+# routes/orders.py
+from flask import Blueprint, render_template, request
+from models import session, Order, Customer
+from datetime import datetime
+
+orders_bp = Blueprint("orders", __name__)
+
+def get_filtered_orders():
+    customer_name = request.args.get("customer")
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    if start_date:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date >= start_dt)
+
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date <= end_dt)
+
+    return query.all()
+
+
+@orders_bp.route("/orders")
+def show_orders():
+    orders = get_filtered_orders()
+    return render_template("orders.html", orders=orders)
+
+步驟 3️⃣：設定 export.py
+
+# routes/export.py
+from flask import Blueprint, request, Response, send_file
+from io import StringIO, BytesIO
+from openpyxl import Workbook
+import csv
+from datetime import datetime
+from .orders import get_filtered_orders
+
+export_bp = Blueprint("export", __name__)
+
+@export_bp.route("/export_csv")
+def export_csv():
+    orders = get_filtered_orders()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["顧客名稱", "商品名稱", "單價", "數量", "總金額", "訂單日期"])
+    for order in orders:
+        writer.writerow([
+            order.customer.name,
+            order.product.name,
+            order.product.price,
+            order.quantity,
+            order.quantity * order.product.price,
+            order.order_date.strftime("%Y-%m-%d")
+        ])
+    response = Response(output.getvalue(), content_type="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+    return response
+
+@export_bp.route("/export_excel")
+def export_excel():
+    orders = get_filtered_orders()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "訂單報表"
+
+    ws.append(["顧客名稱", "商品名稱", "單價", "數量", "總金額", "訂單日期"])
+    total_sum = 0
+    for order in orders:
+        subtotal = order.quantity * order.product.price
+        total_sum += subtotal
+        ws.append([
+            order.customer.name,
+            order.product.name,
+            order.product.price,
+            order.quantity,
+            subtotal,
+            order.order_date.strftime("%Y-%m-%d")
+        ])
+    ws.append(["", "", "", "總金額", total_sum])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name="orders.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+步驟 4️⃣：設定 routes/__init__.py
+
+from .orders import orders_bp
+from .export import export_bp
+
+def register_routes(app):
+    app.register_blueprint(orders_bp)
+    app.register_blueprint(export_bp)
+
+步驟 5️⃣：精簡你的 app.py
+
+from flask import Flask
+from routes import register_routes
+
+app = Flask(__name__)
+register_routes(app)
+
+@app.route("/")
+def home():
+    return "Home Page"
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+✅ 你可以現在執行的任務：
+
+    建立 routes 資料夾與模組化檔案
+
+    測試 /orders、/export_csv、/export_excel 是否仍正常運作
+
+    有任何錯誤都可以立刻問我，我會一步步幫你排查
+
+完成後請告訴我「✅ 完成」，我會幫你進入 Day 21：Flask 報表查詢 + 使用者互動功能進階（HTML強化）。
+
+你的學習方式 是正確的，尤其是你現在的狀況屬於：
+
+    ✅「先照抄 + 邊讀 + 嘗試理解」，
+    然後透過實作加深記憶，這在初期接觸新架構（例如 Flask 的 Blueprint 模組化）時，是非常正常的節奏。
+
+🔍 回答你的兩個問題：
+1️⃣ orders_bp = Blueprint("orders", __name__) 是做什麼的？
+
+這行的重點在於：
+
+orders_bp = Blueprint("orders", __name__)
+
+這是 Flask 的 Blueprint（藍圖）機制，它的用途是：
+功能	說明
+分拆模組	每一個 Blueprint 就像是一個小型的 Flask 應用，可以獨立定義路由。
+名稱空間	"orders" 是 Blueprint 的名稱，可以防止不同模組之間的路由衝突。
+__name__	告訴 Flask Blueprint 這段程式碼的位置，幫助框架找到模板或靜態檔路徑等資源。
+
+🧠 你可以想成：
+
+orders_bp = Blueprint("模組名稱", "目前檔案的識別名")
+
+2️⃣ 我現在「照抄 + 嘗試理解」但還是感覺不熟，這樣學習正常嗎？
+
+✅ 完全正常，甚至是最有效的方式之一，原因如下：
+階段	狀況	建議
+接觸新概念	照抄 + 跟著跑	把重心放在「跑得動」與「理解大方向」上
+第二輪練習	嘗試自己打一次	開一個新檔案，不看原碼寫一次
+第三輪	改題目需求試著調整	改變路由、變數名稱、過濾條件等
+
+🔁 透過這種三階段迴圈練習法，比硬背語法效果好太多。
+✅ 你接下來該怎麼做？
+
+因為你已經在實作階段：
+
+    先把 Blueprint 的 orders 和 export 模組整合完
+
+    確保 /orders、/export_csv、/export_excel 都能正常工作
+
+    有空可以用註解的方式「反向說明」每一段程式碼的用途
+
+🧱 一、為什麼要有 __init__.py？
+
+在 Python 中，當一個資料夾裡包含一個 __init__.py 檔案，Python 就會把它視為一個「模組（module）」或「套件（package）」，也就是說你可以這樣使用：
+
+from myapp.routes import orders_bp
+
+    ✅ 沒有 __init__.py 的話，myapp.routes 就不會被 Python 當作可匯入的模組。
+
+🔧 二、你這段 __init__.py 是在幹嘛？
+
+from .orders import orders_bp
+from .export import export_bp
+
+def register_routes(app):
+    app.register_blueprint(orders_bp)
+    app.register_blueprint(export_bp)
+
+這段的功能是：
+➤ 1. 匯入兩個 blueprint（子模組）：
+
+from .orders import orders_bp
+from .export import export_bp
+
+    .orders 和 .export 是你在 routes/ 資料夾下的兩個 Python 檔案
+
+    orders_bp 和 export_bp 是裡面定義好的 Blueprint 實例
+
+    Blueprint 是 Flask 的模組化方式，方便你將不同功能拆分在不同檔案中
+
+➤ 2. 將它們註冊進 Flask 應用：
+
+def register_routes(app):
+    app.register_blueprint(orders_bp)
+    app.register_blueprint(export_bp)
+
+你會在主程式（如 app.py）中這樣使用它：
+
+from routes import register_routes
+register_routes(app)
+
+這樣做的好處：
+
+    讓所有「註冊路由」的邏輯集中在 routes/__init__.py
+
+    你的 app.py 看起來就會更乾淨、更好維護
+
+🧠 補充觀念：Blueprint 是什麼？
+
+Blueprint 是 Flask 的模組化系統，例如：
+
+    一組與「訂單處理」相關的功能寫在 orders.py
+
+    一組與「匯出報表」相關的功能寫在 export.py
+
+你在裡面定義：
+
+orders_bp = Blueprint("orders", __name__)
+export_bp = Blueprint("export", __name__)
+
+然後在 __init__.py 中一次性匯入並註冊所有功能。
+✅ 總結小抄（你可以筆記）
+概念	說明
+__init__.py	告訴 Python：這是個模組，可以 import
+from .orders import orders_bp	從同資料夾內的 orders.py 匯入 orders 的 Blueprint
+register_routes(app)	將所有 Blueprint 統一註冊到 Flask app 中
+為什麼這樣做？	將功能模組化、讓主程式（app.py）更乾淨
+✅ 若你想進一步了解這些邏輯：
+
+我可以幫你畫一個結構圖，或是製作一份「模組化 Flask 專案結構」的學習筆記。是否需要我幫你整理？

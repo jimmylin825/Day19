@@ -1,0 +1,5 @@
+#使用套件
+flask
+sqlalchemy
+openpyxl
+alembic

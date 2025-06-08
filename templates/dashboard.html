@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>訂單統計 Dashboard</title>
+</head>
+<body>
+<h1>訂單統計 Dashboard</h1>
+
+<!-- 查詢表單 -->
+<form method="get" action="/dashboard">
+    <label for="customer">顧客名稱：</label>
+    <input type="text" name="customer" id="customer" placeholder="輸入顧客名稱" value="{{ request.args.get('customer', '') }}">
+
+    <label for="start">起始日期：</label>
+    <input type="date" name="start" id="start" value="{{ request.args.get('start', '') }}">
+
+    <label for="end">結束日期：</label>
+    <input type="date" name="end" id="end" value="{{ request.args.get('end', '') }}">
+
+    <button type="submit">查詢</button>
+</form>
+
+<!-- 統計結果 -->
+<h2>統計結果</h2>
+<table border="1">
+    <tr>
+        <th>總筆數</th>
+        <th>總金額</th>
+        <th>平均金額</th>
+        <th>最熱門商品</th>
+    </tr>
+    <tr>
+        <td>{{ summary.total_count }}</td>
+        <td>{{ summary.total_amount }}</td>
+        <td>{{ summary.avg_amount }}</td>
+        <td>{{ summary.most_common_product }}</td>
+    </tr>
+</table>
+
+<!-- 返回訂單列表 -->
+<p><a href="/orders">回訂單列表</a></p>
+</body>
+</html>

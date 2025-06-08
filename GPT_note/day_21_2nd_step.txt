@@ -1,0 +1,54 @@
+🔶 Day 21 目標：強化查詢功能與使用者操作體驗
+🎯 學習重點：
+
+    動態排序功能（點選按鈕排序）
+
+    查詢條件開關（例如：「顯示高於特定金額的訂單」）
+
+    前端查詢與匯出整合按鈕（使用者能直接點選查詢和下載報表）
+
+🧩 第一步：加入「排序功能」
+✅ 功能說明：
+
+我們要讓 /orders 頁面支援排序，例如依照：
+
+    訂單日期（新 → 舊）
+
+    總金額（大 → 小）
+
+這會用到 URL 參數，例如：
+
+/orders?sort=amount_desc
+
+✅ 步驟一：後端排序邏輯
+
+請在 get_filtered_orders() 的尾端，補上這段判斷邏輯（可放在 return 之前）：
+
+sort_by = request.args.get("sort")
+
+if sort_by == "amount_desc":
+    query = query.join(Order.product).order_by((Order.quantity * Product.price).desc())
+elif sort_by == "amount_asc":
+    query = query.join(Order.product).order_by((Order.quantity * Product.price).asc())
+elif sort_by == "date_desc":
+    query = query.order_by(Order.order_date.desc())
+elif sort_by == "date_asc":
+    query = query.order_by(Order.order_date.asc())
+
+這段會依照網址上的 sort 參數決定排序方式。
+✅ 步驟二：HTML 增加排序連結或按鈕
+
+在 orders.html 中的表格標題欄位，例如「訂單日期」、「總金額」，你可以加上排序連結：
+
+<th><a href="?sort=date_desc">訂單日期 ↓</a> | <a href="?sort=date_asc">↑</a></th>
+<th><a href="?sort=amount_desc">總金額 ↓</a> | <a href="?sort=amount_asc">↑</a></th>
+
+這樣使用者點選就會重新載入頁面，並且以指定排序方式顯示。
+🧪 練習任務：
+
+    在 get_filtered_orders() 中補上排序的邏輯。
+
+    修改 HTML 的標題列，加上超連結測試排序。
+
+    用瀏覽器開啟 /orders?sort=amount_desc 確認是否正確顯示。
+

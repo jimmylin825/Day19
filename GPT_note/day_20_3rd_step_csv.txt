@@ -1,0 +1,233 @@
+🔥 Day 20 - 第三階段任務：查詢報表整合與資料輸出
+🎯 目標：
+
+將你現在的查詢結果（orders.html）：
+
+    加入條件查詢
+
+    顯示統計資料（總金額）
+
+    可以匯出查詢結果為 CSV 或 Excel
+
+✅ 全流程分解
+第一步：你已完成 ✅
+
+    顯示訂單頁面 /orders
+
+    關鍵字與日期篩選
+
+    HTML 表單操作與資料總計顯示
+
+第二步：新增「下載報表」功能 🔽（我們接下來要做的）
+
+這步會讓你能在 /orders 頁面中：
+
+    看到「下載報表」按鈕
+
+    下載目前篩選過的訂單資料（依查詢條件過濾）
+
+    可選擇格式：CSV 或 Excel（先從 CSV 開始）
+
+🚧 今天目標：先實作 CSV 報表匯出
+步驟概覽：
+
+    新增 Flask 路由 /export_csv
+
+        接收與 /orders 相同的查詢參數
+
+        篩選資料
+
+        使用 csv 模組輸出 CSV 檔
+
+    在 orders.html 中新增按鈕：
+
+        「匯出報表（CSV）」按鈕
+
+        按下去會開啟 /export_csv?... 對應的下載連結
+
+🔧 步驟一：建立匯出路由 /export_csv
+
+我們會建立一個和 /orders 功能幾乎一樣的 Flask 路由，只是最後不是 render_template()，而是輸出一個 CSV 檔案。
+✅ Step 1：在 app.py 加上 /export_csv 路由
+
+from flask import Flask, render_template, request, Response
+from models import session, Order, Customer
+from datetime import datetime
+import csv
+from io import StringIO
+
+app = Flask(__name__)
+
+# ... 你原本的 /orders 路由保留
+
+@app.route("/export_csv")
+def export_csv():
+    customer_name = request.args.get("customer")
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    if start_date:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date >= start_dt)
+
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date <= end_dt)
+
+    orders = query.all()
+
+    # 寫入 CSV 字串
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["顧客名稱", "商品名稱", "單價", "數量", "總金額", "訂單日期"])
+
+    for order in orders:
+        writer.writerow([
+            order.customer.name,
+            order.product.name,
+            order.product.price,
+            order.quantity,
+            order.quantity * order.product.price,
+            order.order_date.strftime("%Y-%m-%d")
+        ])
+
+    # 回傳下載檔案
+    response = Response(output.getvalue(), content_type="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+    return response
+
+✅ Step 2：在 orders.html 裡加入「匯出報表」連結
+
+你可以在搜尋表單下方加這一段按鈕或連結：
+
+<form method="get" action="/export_csv">
+    <input type="hidden" name="customer" value="{{ request.args.get('customer', '') }}">
+    <input type="hidden" name="start" value="{{ request.args.get('start', '') }}">
+    <input type="hidden" name="end" value="{{ request.args.get('end', '') }}">
+    <button type="submit">匯出報表（CSV）</button>
+</form>
+
+🔍 說明：
+
+    這個表單會自動把你目前查詢用的參數也一起帶到 /export_csv，讓你匯出的報表內容就是你現在看到的資料。
+
+    使用 StringIO 模擬一個記憶體中的檔案，讓 Flask 回傳為下載檔案。
+
+🧪 測試方法：
+
+    先在 /orders 做關鍵字或日期篩選
+
+    按下「匯出報表（CSV）」按鈕
+
+    下載的檔案應該就是目前畫面上看到的資料
+
+ChatGPT 說：
+
+非常好的觀察 👏
+你說得完全正確：/export_csv 和 /orders 之間有大量 重複的查詢邏輯，這正是實務中常見的「重構」時機。
+✅ 解法：抽出共用的查詢邏輯為一個獨立函式
+📦 1. 建立一個函式：get_filtered_orders()
+
+這個函式會統一處理查詢條件邏輯，並回傳查詢結果：
+
+def get_filtered_orders():
+    customer_name = request.args.get("customer")
+    start_date = request.args.get("start")
+    end_date = request.args.get("end")
+
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    if start_date:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date >= start_dt)
+
+    if end_date:
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        query = query.filter(Order.order_date <= end_dt)
+
+    return query.all()
+
+📍 2. 修改 /orders 與 /export_csv 路由使用這個函式
+
+@app.route("/orders")
+def show_orders():
+    orders = get_filtered_orders()
+    return render_template("orders.html", orders=orders)
+
+
+@app.route("/export_csv")
+def export_csv():
+    orders = get_filtered_orders()
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["顧客名稱", "商品名稱", "單價", "數量", "總金額", "訂單日期"])
+
+    for order in orders:
+        writer.writerow([
+            order.customer.name,
+            order.product.name,
+            order.product.price,
+            order.quantity,
+            order.quantity * order.product.price,
+            order.order_date.strftime("%Y-%m-%d")
+        ])
+
+    response = Response(output.getvalue(), content_type="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+    return response
+
+✅ 優點
+
+    重複邏輯只寫一次，更好維護
+
+    未來如果查詢條件邏輯需要修改，只要改 get_filtered_orders() 一個地方就好
+
+    結構更清晰，方便你自己和他人理解
+
+    🧠 StringIO() 是什麼？
+
+StringIO 來自 io 模組，是一種 在記憶體中模擬檔案操作的物件。你可以把它想成一份「假的檔案」，可以 write()、read()，但實際上它並不會寫入硬碟，而是存在記憶體裡。
+📦 為什麼 Flask 匯出 CSV 要用它？
+
+因為你在 /export_csv 裡是要讓使用者 直接下載檔案，不需要真的把檔案寫入硬碟。這時候就很適合使用 StringIO() 來：
+
+    建立一個記憶體中的檔案容器
+
+    把資料寫進去（用 csv.writer(output)）
+
+    將這個資料內容作為回應傳給使用者下載（用 response = Response(output.getvalue(), ...)）
+
+🔍 對照範例說明：
+
+from io import StringIO
+import csv
+
+output = StringIO()                      # 建立一個「記憶體中的檔案」
+writer = csv.writer(output)             # 使用 csv 寫入器，把資料寫進這個 output
+
+writer.writerow(["姓名", "商品", "數量"])   # 寫入標題
+writer.writerow(["小明", "耳機", 2])       # 寫入一筆資料
+
+csv_string = output.getvalue()          # 把整個檔案內容取出（字串格式）
+
+這樣就不需要真正產生一個 xxx.csv 檔案，也能提供下載。
+✅ 最後用途（結合 Flask）
+
+你把 csv_string 放進 Flask 回傳：
+
+from flask import Response
+
+response = Response(csv_string, content_type="text/csv")
+response.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+return response
+
+使用者點擊網址就能下載這個 CSV 檔。

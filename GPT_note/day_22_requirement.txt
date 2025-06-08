@@ -1,0 +1,289 @@
+🔥 Day 22 目標：多功能報表整合與動態分析
+✅ 整體流程概覽：
+
+    動態篩選與報表生成整合
+
+        彈性搜尋 + 自動產生圖表或統計指標
+
+        多格式匯出支援（CSV、Excel）
+
+    統計指標區塊設計
+
+        顯示：
+
+            訂單總數
+
+            總銷售額
+
+            平均每筆訂單金額
+
+            最暢銷商品
+
+    HTML 模板整合顯示統計資訊
+
+        在 /orders 頁面頂部加上統計數據區塊（非表格內）
+
+    可選進階挑戰
+
+        加上圖表元件（Bar Chart / Pie Chart）顯示商品銷售分布（需要額外 JS 或圖片產生）
+
+        根據條件自動更新圖表數據
+
+👣 我們現在先做：
+📌 步驟一：訂單統計函式（回傳總數、總金額、平均金額、最熱門商品）
+
+請你先嘗試建立一個函式 get_order_summary(orders)，用來接收已篩選的訂單並回傳以下資訊：
+
+    總筆數（筆數）
+
+    總金額
+
+    平均每筆訂單金額
+
+    銷售最多的商品名稱與數量
+
+你可以先嘗試撰寫，或請我一步步引導你完成也可以，等你完成後我們會再進行 HTML 顯示整合。是否要由我先幫你引導第一步？
+
+✅ 修正後的寫法如下：
+
+from collections import Counter
+
+def get_order_summary(orders):
+    total_count = len(orders)
+    total_amount = 0
+    product_counter = Counter()
+
+    for order in orders:
+        subtotal = order.quantity * order.product.price
+        total_amount += subtotal
+        product_counter[order.product.name] += order.quantity
+
+    avg_amount = round(total_amount / total_count, 2) if total_count > 0 else 0
+    most_common_product = product_counter.most_common(1)[0][0] if product_counter else "無"
+
+    return {
+        "total_count": total_count,
+        "total_amount": total_amount,
+        "avg_amount": avg_amount,
+        "most_common_product": most_common_product
+    }
+
+💡 補充說明：
+
+    Counter() 是 Python 的標準工具，用來計算最常出現的項目。
+
+    product_counter.most_common(1) 會回傳像 [('滑鼠', 4)]，取 [0][0] 就是最多的商品名稱。
+
+    平均金額四捨五入到小數點 2 位。
+
+如果你有 utils.py 可以放進去，然後在 orders.py 裡面用：
+
+from utils import get_order_summary
+
+是的，.most_common() 是 Python collections.Counter 物件的內建方法，非常常用於統計中出現最多的元素。這段程式碼：
+
+product_counter.most_common(1)[0][0]
+
+乍看之下有點難讀，我來幫你逐層拆解說明：
+✅ 說明 .most_common(n)
+
+product_counter.most_common(1)
+
+這會回傳一個長度為 1 的清單，裡面是出現次數最多的項目，格式為：
+
+[('商品名稱', 出現次數)]
+
+範例：
+
+Counter({'滑鼠': 3, '鍵盤': 2}).most_common(1)
+# 結果：[('滑鼠', 3)]
+
+✅ 拆解 [0][0]
+
+接著來看：
+
+[('滑鼠', 3)][0][0]
+
+    [0]：從清單中取出第一筆資料 → ('滑鼠', 3)
+
+    [0]：再從這個 tuple 中取出第一個元素 → "滑鼠"
+
+✅ 總結用途
+
+product_counter.most_common(1)[0][0]
+
+這一整段的意思是：
+
+    🔍 「找出出現次數最多的商品名稱」
+
+🧠 小提醒
+
+你也可以這樣理解整段的結構：
+
+most_common_item = product_counter.most_common(1)   # [("滑鼠", 3)]
+first_item = most_common_item[0]                    # ("滑鼠", 3)
+product_name = first_item[0]                        # "滑鼠"
+
+這一行：
+
+product_counter[order.product.name] += order.quantity
+
+其實是 collections.Counter 或 defaultdict(int) 的典型累加寫法，我們來逐步解析它的用途和背景。
+🔍 背後邏輯
+
+這段的用途是：
+
+    ✅ 累加每個商品的總數量，用來統計哪個商品銷量最多。
+
+✅ 拆解說明
+
+假設我們有這樣一筆訂單：
+
+order.product.name = "鍵盤"
+order.quantity = 3
+
+那這行程式會做的事是：
+
+product_counter["鍵盤"] += 3
+
+❓為什麼不會報錯？初始是 0 嗎？
+
+是的！這裡的 product_counter 一定是這樣建立的：
+
+from collections import defaultdict
+product_counter = defaultdict(int)
+
+這代表：
+
+    product_counter["鍵盤"] 預設值是 0
+
+    所以即使這是第一次出現「鍵盤」，也能直接做 += 運算
+
+✅ 等效寫法（更好懂）
+
+如果你想把它寫得比較白話，也可以用這種寫法：
+
+name = order.product.name
+qty = order.quantity
+product_counter[name] = product_counter[name] + qty
+
+但因為這種統計邏輯會大量出現，所以一般 Python 寫法會簡潔地用：
+
+product_counter[order.product.name] += order.quantity
+
+🧠 實務範例
+
+你最後就能統計出：
+
+{'滑鼠': 6, '鍵盤': 4, '螢幕': 3}
+
+然後用 .most_common(1) 找出賣最好的商品。
+
+🧩 剩下的 Day 22 功能：
+
+現在要把這些統計結果「顯示到網頁上」，我們會執行以下步驟：
+✅ 接下來任務：
+1. 在 routes/dashboard.py 中建立 /dashboard 頁面：
+
+from flask import Blueprint, render_template
+from .orders import get_filtered_orders
+from ..utils import get_order_summary
+
+dashboard_bp = Blueprint("dashboard", __name__)
+
+@dashboard_bp.route("/dashboard")
+def dashboard():
+    orders, customer_name, start_date, end_date, sort_by = get_filtered_orders()
+    summary = get_order_summary(orders)
+    return render_template("dashboard.html", summary=summary)
+
+2. 建立 templates/dashboard.html，顯示統計資訊：
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>訂單統計報表</title>
+</head>
+<body>
+    <h1>統計報表</h1>
+    <p>總訂單數量：{{ summary.total_count }}</p>
+    <p>總金額：{{ summary.total_amount }}</p>
+    <p>平均每筆金額：{{ summary.avg_amount }}</p>
+    <p>最常購買商品：{{ summary.most_common_product }}</p>
+</body>
+</html>
+
+3. 註冊 dashboard_bp 到 __init__.py
+
+你應該已經有這行：
+
+from .routes.dashboard import dashboard_bp
+app.register_blueprint(dashboard_bp)
+
+🚀 完成後，你可以進入 http://localhost:5000/dashboard 查看統計報表結果！
+
+請根據以上步驟完成 Day 22 的剩餘任務。如果你完成了我會幫你確認，再正式進入 Day 23 的重構練習 ✅
+
+✅ 進一步建議：前端表單連動查詢
+
+目前你查詢 /orders 頁面會有篩選功能，而 /dashboard 還沒有對應的搜尋欄。
+
+你可以複製 /orders 的搜尋表單，貼到 dashboard.html 中，稍作修改，例如：
+
+以下是功能完整的 dashboard.html，支援條件查詢與統計摘要展示，風格與你目前的 orders.html 一致：
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>訂單統計 Dashboard</title>
+</head>
+<body>
+<h1>訂單統計 Dashboard</h1>
+
+<!-- 查詢表單 -->
+<form method="get" action="/dashboard">
+    <label for="customer">顧客名稱：</label>
+    <input type="text" name="customer" id="customer" placeholder="輸入顧客名稱" value="{{ request.args.get('customer', '') }}">
+
+    <label for="start">起始日期：</label>
+    <input type="date" name="start" id="start" value="{{ request.args.get('start', '') }}">
+
+    <label for="end">結束日期：</label>
+    <input type="date" name="end" id="end" value="{{ request.args.get('end', '') }}">
+
+    <button type="submit">查詢</button>
+</form>
+
+<!-- 統計結果 -->
+<h2>統計結果</h2>
+<table border="1">
+    <tr>
+        <th>總筆數</th>
+        <th>總金額</th>
+        <th>平均金額</th>
+        <th>最熱門商品</th>
+    </tr>
+    <tr>
+        <td>{{ summary.total_count }}</td>
+        <td>{{ summary.total_amount }}</td>
+        <td>{{ summary.avg_amount }}</td>
+        <td>{{ summary.most_common_product }}</td>
+    </tr>
+</table>
+
+<!-- 返回訂單列表 -->
+<p><a href="/orders">回訂單列表</a></p>
+</body>
+</html>
+
+🔧 功能說明：
+
+    可以透過網址或表單篩選指定的顧客與日期範圍
+
+    顯示對應條件的統計資料（筆數、總金額、平均金額、最熱門商品）
+
+    可以從 /dashboard 直接跳回 /orders 看詳細清單
+
+你可以直接複製這份貼上並測試。如果你有額外的統計項目也可以隨時擴充。需要的話我也可以幫你加入圖表或匯出功能。是否繼續進入 Day 23 最後重構總結？

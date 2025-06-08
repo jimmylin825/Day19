@@ -1,0 +1,82 @@
+🎯 任務目標：使用 SQLAlchemy 程式自動插入資料
+
+你將寫一支獨立的 Python 腳本 seed.py，執行後自動建立下列資料：
+✅ 任務需求內容
+🔹 1. 顧客資料（5 筆）
+姓名	Email
+小明	ming@example.com
+小華	hua@example.com
+小美	mei@example.com
+小強	chiang@example.com
+小綠	green@example.com
+🔹 2. 商品資料（5 筆）
+商品名稱	單價
+耳機	800
+滑鼠	600
+鍵盤	1200
+螢幕	4000
+音響	2500
+🔹 3. 訂單資料（10 筆）
+
+每筆包含：
+
+    customer_id：從現有顧客中隨機挑選
+
+    product_id：從現有商品中隨機挑選
+
+    quantity：1~5 隨機數
+
+    order_date：分布在 2024-01-01 ~ 2024-03-31 的日期
+
+✏️ 額外限制（讓你練邏輯）：
+
+    請不要手動填寫 id
+
+    使用 datetime 與 random 自動生成日期與數量
+
+    最後印出「成功插入幾筆顧客、商品與訂單資料」
+
+📁 建議檔案結構
+
+你可建立一支新檔 seed.py，並引用 models.py 中的 session, Product, Customer, Order。
+✅ 完成後我會幫你檢查：
+
+    資料是否正確插入（我會給你查詢方式）
+
+    是否符合隨機性與資料邏輯
+
+    結果是否與你的資料表關聯設定正確連動（order → product / customer）
+
+✅ 如何產生隨機日期（範例程式碼）
+
+你可以用這段方式產生：
+
+import random
+from datetime import datetime, timedelta
+
+def random_date(start, end):
+    """從 start 到 end 之間產生隨機 datetime"""
+    delta = end - start
+    random_days = random.randint(0, delta.days)
+    return start + timedelta(days=random_days)
+
+# 範圍定義
+start_date = datetime(2024, 1, 1)
+end_date = datetime(2024, 3, 31)
+
+# 測試隨機日期
+for _ in range(3):
+    print(random_date(start_date, end_date))
+
+📌 整合到你的訂單資料：
+
+在你建立 Order 的時候可以這樣用：
+
+order = Order(
+    customer_id=random.choice(customers).id,
+    product_id=random.choice(products).id,
+    quantity=random.randint(1, 5),
+    order_date=random_date(start_date, end_date)
+)
+
+只要你 Order 的 order_date 欄位是 DateTime，這樣塞進去完全沒問題。

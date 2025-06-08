@@ -1,0 +1,70 @@
+                                      🚀【新版 Day 19：Flask + ORM + 報表整合挑戰】
+
+任務主題：簡易銷售管理系統
+🎯 你要完成的項目（共 5 大步驟）
+✅ 步驟一：資料庫模型設計與建表
+
+使用 SQLAlchemy + Alembic 建立三張資料表：
+
+    Product(id, name, price)
+
+    Customer(id, name, email)
+
+    Order(id, customer_id, product_id, quantity, order_date)
+
+👉 關聯說明：
+
+    一個顧客可以下多筆訂單（One-to-Many）
+
+    每筆訂單只對應一個產品（Many-to-One）
+
+✅ 步驟二：插入假資料（至少 5 筆顧客、5 筆商品、10 筆訂單）
+
+    使用 datetime 做出不同的 order_date
+
+    實作程式自動插入假資料，不手動填寫 SQL
+
+✅ 步驟三：Flask 查詢介面
+
+實作一個 Flask 頁面：
+
+    /orders: 顯示所有訂單，格式為：
+
+    顧客名稱 | 商品名稱 | 數量 | 單價 | 總價 | 訂單日期
+
+✅ 步驟四：條件篩選功能
+
+加入 /orders?customer=小明 這類 URL 查詢功能，讓你可以：
+
+    根據顧客名稱過濾
+
+    根據日期區間過濾（例如 ?start=2024-01-01&end=2024-03-31）
+
+✅ 步驟五：報表下載功能（CSV 或 Excel）
+
+新增 /export-orders 路由，會根據目前查詢條件匯出對應的報表：
+
+    CSV 或 Excel 檔案格式皆可
+
+    欄位與查詢結果一致
+
+📁 檔案結構建議
+
+/your_project/
+├── app.py                # Flask 主程式
+├── models.py             # 資料表定義
+├── seed.py               # 假資料插入工具
+├── templates/
+│   └── orders.html       # 訂單列表頁
+├── static/               # 可放 CSS 或 JS
+└── export_tool.py        # 匯出功能工具（選擇性模組化）
+
+🧠 你現在可以開始第 1 步：建表
+
+目標：
+
+    在 models.py 中定義三個資料表
+
+    在 alembic 中建立 migration 並執行建表
+
+你完成這一步後再告訴我，我幫你檢查，通過後再讓你進入第 2 步：插入假資料。

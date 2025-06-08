@@ -1,0 +1,139 @@
+📘 Day 20 主題：條件查詢與彈性報表輸出
+🎯【Day 20 全體流程總覽】：
+階段	任務內容	說明
+①	顯示所有訂單（你已完成）	/orders
+②	顧客條件查詢	/orders?customer=小明
+③	日期區間查詢	/orders?start=2024-01-01&end=2024-03-01
+④	顧客 + 區間雙條件查詢	/orders?customer=小明&start=2024-01-01&end=2024-03-01
+⑤	匯出報表（CSV/Excel）	顯示資料下方加一個按鈕：下載報表
+🔄	強化練習題	額外加分挑戰（分組統計、月銷售等）
+🔹 今日子任務（步驟②）：顧客名稱查詢條件 /orders?customer=小明
+✅ 整體流程步驟說明：
+步驟	說明
+1️⃣	在 /orders 中讀取網址的 request.args.get("customer")
+2️⃣	如果有輸入，就在 SQLAlchemy 中加入 .filter() 條件
+3️⃣	將查詢結果傳入 orders.html
+4️⃣	測試網址：http://127.0.0.1:5000/orders?customer=小明 是否正確顯示資料
+5️⃣	在網頁最上方加一個搜尋欄（可選強化）
+📌 所需新知：
+
+    from flask import request
+
+    request.args.get("參數名稱")
+
+    .filter() 結合 .like() 或 == 做查詢
+
+✅ 任務目標：顧客名稱查詢 /orders?customer=小明
+🔸 Step 1：引入 request 物件
+
+在你的 Flask 程式頂部加入：
+
+from flask import Flask, render_template, request
+
+🔸 Step 2：修改 /orders 的查詢邏輯
+
+更新你的 /orders 路由如下：
+
+@app.route("/orders")
+def show_orders():
+    customer_name = request.args.get("customer")
+
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    orders = query.all()
+    return render_template("orders.html", orders=orders)
+
+🔍 說明：
+代碼	功能
+request.args.get("customer")	從網址參數取得顧客名稱
+query.join(Order.customer)	把 Order 和 Customer 做關聯查詢
+.filter(Customer.name == ...)	只保留符合條件的結果
+query.all()	取出最終結果資料
+✅ 測試網址：
+
+http://127.0.0.1:5000/orders?customer=小明
+
+如果顯示正確 → ✅ 成功篩選出只有「小明」的訂單
+🧠 進階提示（可選）：
+
+    如果你想讓關鍵字模糊查詢，可以改成：
+
+.filter(Customer.name.like(f"%{customer_name}%"))
+
+這樣打「小」也會顯示「小明」、「小美」、「小強」等。
+
+✅ 任務目標：顧客名稱查詢 /orders?customer=小明
+🔸 Step 1：引入 request 物件
+
+在你的 Flask 程式頂部加入：
+
+from flask import Flask, render_template, request
+
+🔸 Step 2：修改 /orders 的查詢邏輯
+
+更新你的 /orders 路由如下：
+
+@app.route("/orders")
+def show_orders():
+    customer_name = request.args.get("customer")
+
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    orders = query.all()
+    return render_template("orders.html", orders=orders)
+
+🔍 說明：
+代碼	功能
+request.args.get("customer")	從網址參數取得顧客名稱
+query.join(Order.customer)	把 Order 和 Customer 做關聯查詢
+.filter(Customer.name == ...)	只保留符合條件的結果
+query.all()	取出最終結果資料
+✅ 測試網址：
+
+http://127.0.0.1:5000/orders?customer=小明
+
+如果顯示正確 → ✅ 成功篩選出只有「小明」的訂單
+🧠 進階提示（可選）：
+
+    如果你想讓關鍵字模糊查詢，可以改成：
+
+.filter(Customer.name.like(f"%{customer_name}%"))
+
+這樣打「小」也會顯示「小明」、「小美」、「小強」等。
+
+🧠 Flask 語法小抄（處理網址參數）
+語法	說明	範例
+request.args.get("欄位名")	取得網址參數	/orders?customer=小明 → request.args.get("customer") 回傳 "小明"
+🧠 SQLAlchemy 查詢語法小抄
+語法	說明	範例
+session.query(資料表)	建立查詢物件	session.query(Order)
+.join(關聯名稱)	產生資料表關聯	.join(Order.customer)（需有 relationship）
+.filter(條件)	篩選資料	.filter(Customer.name == "小明")
+.all()	取得所有資料（list）	orders = query.all()
+.first()	只取第一筆資料	query.first()
+.order_by(欄位)	排序資料	.order_by(Order.order_date.desc())
+🧠 Jinja2 模板語法小抄（HTML 顯示用）
+語法	功能	範例
+{{ 變數 }}	輸出變數內容	{{ order.customer.name }}
+{% for item in 清單 %}	迴圈	{% for order in orders %}
+{% set 變數 = 值 %}	建立或更新變數	{% set total = 0 %}
+變數.方法()	呼叫方法	{{ order.order_date.strftime("%Y-%m-%d") }}
+🔄 Flask 路由查詢邏輯（範例）
+
+@app.route("/orders")
+def show_orders():
+    customer_name = request.args.get("customer")
+    query = session.query(Order)
+
+    if customer_name:
+        query = query.join(Order.customer).filter(Customer.name == customer_name)
+
+    orders = query.all()
+    return render_template("orders.html", orders=orders)
+
